@@ -132,6 +132,7 @@ const otherFiles = [
 	'server/robots.txt',
 	'server/manifest.json',
 	'server/music/**/*.mp3',
+	'server/music/**/*.flac',
 ];
 const copyOtherFiles = () => src(otherFiles, { base: 'server/', encoding: false })
 	.pipe(dest('./dist'));
@@ -161,7 +162,7 @@ const uploadCreator = (bucket) => () => src(uploadSources, { base: './dist', enc
 		maps: {
 			CacheControl: (keyname) => {
 				if (keyname.indexOf('index.html') > -1) return 'max-age=300'; // 10 minutes
-				if (keyname.indexOf('.mp3') > -1) return 'max-age=31536000'; // 1 year for mp3 files
+				if (keyname.match(/\.(mp3|flac)$/i)) return 'max-age=31536000'; // 1 year for audio files
 				return 'max-age=2592000'; // 1 month
 			},
 		},

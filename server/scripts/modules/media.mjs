@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const scanMusicDirectory = async () => {
 	const parseDirectory = async (path, prefix = '') => {
 		const listing = await text(path);
-		const matches = [...listing.matchAll(/href="([^"]+\.mp3)"/gi)];
+		const matches = [...listing.matchAll(/href="([^"]+\.(?:mp3|flac))"/gi)];
 		return matches.map((m) => `${prefix}${m[1]}`);
 	};
 
@@ -56,6 +56,23 @@ const scanMusicDirectory = async () => {
 		console.error(e);
 		return { availableFiles: [] };
 	}
+};
+
+const getMimeTypeForFile = (fileName) => {
+	const extension = (fileName.split('.').pop() || '').toLowerCase();
+	if (extension === 'flac') return 'audio/flac';
+	// default to mp3
+	return 'audio/mpeg';
+};
+
+const filterPlayableFiles = (files) => {
+	// Use browser capability reporting to avoid adding tracks that can't be played.
+	const probe = new Audio();
+	return files.filter((fileName) => {
+		const mimeType = getMimeTypeForFile(fileName);
+		// Some browsers return 'maybe'/'probably' for playable types.
+		return probe.canPlayType(mimeType) !== '';
+	});
 };
 
 const getMedia = async () => {
@@ -81,8 +98,15 @@ const getMedia = async () => {
 	}
 
 	const fileCount = playlist?.availableFiles?.length || 0;
+	if (playlist?.availableFiles?.length > 0) {
+		playlist.availableFiles = filterPlayableFiles(playlist.availableFiles);
+	}
+	const playableFileCount = playlist?.availableFiles?.length || 0;
 	if (fileCount > 0) {
-		console.log(`Loaded playlist ${playlistSource} - found ${fileCount} music file${fileCount === 1 ? '' : 's'}`);
+		const filteredCount = fileCount - playableFileCount;
+		console.log(
+			`Loaded playlist ${playlistSource} - found ${fileCount} music file${fileCount === 1 ? '' : 's'}${filteredCount > 0 ? ` (${filteredCount} filtered as unplayable by this browser)` : ''}`,
+		);
 	} else {
 		console.log(`No music files found ${playlistSource}`);
 	}
@@ -267,9 +291,10 @@ const initializePlayer = () => {
 	player.addEventListener('ended', playerEnded);
 
 	// get the first file
-	player.src = `music/${playlist.availableFiles[currentTrack]}`;
-	setTrackName(playlist.availableFiles[currentTrack]);
-	player.type = 'audio/mpeg';
+	const firstTrack = playlist.availableFiles[currentTrack];
+	player.src = `music/${firstTrack}`;
+	player.type = getMimeTypeForFile(firstTrack);
+	setTrackName(firstTrack);
 	// set volume and slider indicator
 	setVolume(mediaVolume.value);
 	volumeSliderInput.value = Math.round(mediaVolume.value * 100);
@@ -291,14 +316,16 @@ const playerEnded = () => {
 		currentTrack = 0;
 	}
 	// update the player source
-	player.src = `music/${playlist.availableFiles[currentTrack]}`;
-	setTrackName(playlist.availableFiles[currentTrack]);
+	const nextTrack = playlist.availableFiles[currentTrack];
+	player.src = `music/${nextTrack}`;
+	player.type = getMimeTypeForFile(nextTrack);
+	setTrackName(nextTrack);
 };
 
 const setTrackName = (fileName) => {
 	const baseName = fileName.split('/').pop();
 	const trackName = decodeURIComponent(
-		baseName.replace(/\.mp3/gi, '').replace(/(_-)/gi, ''),
+		baseName.replace(/\.(?:mp3|flac)/gi, '').replace(/(_-)/gi, ''),
 	);
 	document.getElementById('musicTrack').innerHTML = trackName;
 };

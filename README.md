@@ -275,9 +275,9 @@ WeatherStar 4000+ supports background music during forecast playback. The music 
 
 #### Express server modes (`npm start`, `DIST=1 npm start`, or `Dockerfile.server`)
 
-When running with Node.js, the server generates a `playlist.json` file by scanning the `./server/music` directory for `.mp3` files. If no files are found in `./server/music`, it falls back to scanning `./server/music/default/`. The playlist is served dynamically at the `/playlist.json` endpoint.
+When running with Node.js, the server generates a `playlist.json` file by scanning the `./server/music` directory for audio files (`.mp3` and `.flac`). If no files are found in `./server/music`, it falls back to scanning `./server/music/default/`. The playlist is served dynamically at the `/playlist.json` endpoint.
 
-**Adding your own music:** Place `.mp3` files in `./server/music/`
+**Adding your own music:** Place `.mp3` or `.flac` files in `./server/music/` (FLAC support depends on the browser)
 
 **Docker server example:**
 ```bash
@@ -297,7 +297,7 @@ For directory scanning to work properly:
 * Your web server must generate directory listings for the `music/` path
 * Your web server must set the `X-Weatherstar: true` header (the provided nginx configuration does this)
 
-**Adding your own music:** Place `.mp3` files in `music/` (or bind mount to `/usr/share/nginx/html/music` for Docker)
+**Adding your own music:** Place `.mp3` or `.flac` files in `music/` (or bind mount to `/usr/share/nginx/html/music` for Docker). FLAC support depends on the browser.
 
 **Docker static example:**
 ```bash
